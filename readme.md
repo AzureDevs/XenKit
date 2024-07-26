@@ -3,10 +3,14 @@
 > This plugin is based off of @euwbah's previous tuning plugins for MuseScore 3 and 4. The plugin is intended to be a temporary solution until the new XenTuner comes out.
 
 > [!CAUTION]
-> This plugin is still under development and does not include some features. See [Planned Features](#Planned-Features-(and-workarounds)).
+> This plugin is still under development and does not include some features. See [Planned Features](#Planned-Features-and-workarounds).
 
 
 ## Features / Guide
+
+### Getting Started
+
+Download, drag and drop the folder into /MuseScore3(or4)/Plugins and refresh the plugins list. It is recommended to bind this plugin to a key like <kbd>opt</kbd><kbd>t</kbd>. You will need to run this plugin every time you make changes to retune.
 
 ### Tuning Systems
 
