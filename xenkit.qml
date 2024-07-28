@@ -546,7 +546,7 @@ MuseScore {
       // loop through each staff
       for (var i = 0; i < curScore.nstaves * 4; i++) {
         // is a drum? too bad
-        if (drums.includes(Math.floor(i % 4))) continue;
+        if (drums.includes(Math.floor(i / 4))) continue;
 
         log("----- Track " + i + " -----");
         cursor.track = i;
