@@ -61,7 +61,7 @@ These rules apply for lyric accidentals as well as key signatures.
 
 You can chain multiple intervals together with spaces (or `*` in lyrics) (eg. `3/2 1\12`, `3/2*1\12`).
 
-Append a `*` or `=` to the begging to make the interval relative or absolute (we'll get to that later).
+Append a `*` or `=` to the beginning to make the interval relative or absolute (we'll get to that later).
 
 
 ### Key Signature Annotations

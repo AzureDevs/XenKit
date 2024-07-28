@@ -527,8 +527,6 @@ MuseScore {
   onRun: {
     log("Tuner started running", true);
 
-    log(JSON.stringify(parseKeySig("|b|||||", calcParams(19))));
-
     try {
 
       const cursor = curScore.newCursor();
@@ -537,8 +535,19 @@ MuseScore {
             relativityMap = [ [ 0, 0 ] ], // relativity is off by default
             paramsMap = [ [ 0, calcParams(12) ] ]; // default temperament is 12EDO
 
+      // loop through each part to find drum parts, and ignore during tuning
+      const drums = [];
+      for (const part of Object.values(cursor.score.parts)) {
+        if (part.hasDrumStaff) drums.push(Math.floor(part.startTrack / 4)); // assume all drumsets only have 1 staff!
+      }
+      log("DRUMS:");
+      log(JSON.stringify(drums));
+
       // loop through each staff
       for (var i = 0; i < curScore.nstaves * 4; i++) {
+        // is a drum? too bad
+        if (drums.includes(Math.floor(i % 4))) continue;
+
         log("----- Track " + i + " -----");
         cursor.track = i;
         cursor.rewind(Cursor.SCORE_START);
