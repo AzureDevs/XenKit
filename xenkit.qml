@@ -411,8 +411,6 @@ MuseScore {
       // WIP: check the annotation accidentals too
     }
 
-    curScore.startCmd();
-
     // calculate the written accidental and keysig
     var v = accidentalMap[octave * 7 + natural] * keysig[natural];
 
@@ -426,7 +424,6 @@ MuseScore {
     v *= naturals[natural] * Math.pow(2, octave);
 
     note.tuning = calcOffset(v, note, note.accidentalType); // note: an accidentalMap to offset the default effective accidental (MS 4.2+) is not required because of the relative tuning :D
-    curScore.endCmd();
 
     log("Tuned a note to " + Math.round(note.tuning * 1000) / 1000);
     
@@ -543,6 +540,8 @@ MuseScore {
       log("DRUMS:");
       log(JSON.stringify(drums));
 
+      curScore.startCmd();
+
       // loop through each staff
       for (var i = 0; i < curScore.nstaves * 4; i++) {
         // is a drum? too bad
@@ -604,6 +603,8 @@ MuseScore {
           cursor.next();
         }
       }
+
+      curScore.endCmd();
 
       log("Tuner finished running");
       qtQuit();
