@@ -444,8 +444,8 @@ MuseScore {
     // tune each note
     for (var i = 0; i < chord.notes.length; i++) {
       // grab any annotation accidentals
-      const lyric = chord.lyrics[i] ? parseInterval(chord.lyrics[i].text, params) || false : false;
-      if (lyric) log("Tuned an annotation " + chord.lyrics[i].text.replace(/&gt;/g, ">") + " to " + lyric);
+      const lyric = chord.lyrics[chord.notes.length - i - 1] ? parseInterval(chord.lyrics[chord.notes.length - i - 1].text, params) || false : false;
+      if (lyric) log("Tuned an annotation " + chord.lyrics[chord.notes.length - i - 1].text.replace(/&gt;/g, ">") + " to " + lyric);
 
       tune(chord.notes[i], keysig, accidentalMap, lyric, relativity, params);
     }
@@ -454,7 +454,7 @@ MuseScore {
     for (var i = 0; i < chord.graceNotes.length; i++) {
       for(var j = 0; j < chord.graceNotes[i].length; j++) {
         // grab any annotation accidentals
-        const lyric = chord.lyrics[i * chord.graceNotes.length + j + chord.notes.length] ? parseInterval(chord.lyrics[i * chord.graceNotes.length + j + chord.notes.length].text, params) || false : false;
+        const lyric = chord.lyrics[i * chord.graceNotes.length + chord.graceNotes[i].length - j - 1 + chord.notes.length] ? parseInterval(chord.lyrics[i * chord.graceNotes.length + chord.graceNotes[i].length - j - 1 + chord.notes.length].text, params) || false : false;
 
         tune(chord.graceNotes[i].notes[j], keysig, accidentalMap, lyric, relativity, params);
       }
