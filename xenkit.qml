@@ -31,8 +31,9 @@ MuseScore {
     const pitchHz = Math.pow(2, ((note.pitch - 69)/12)) * 440;
 
     // MS 4.2+ (offsets from xentuner plugin)
-    const base = ((mscoreMajorVersion == 4 && mscoreMinorVersion >= 2) || mscoreMajorVersion > 4) ? ([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -50, -150, 50, -50, 150, 50, 250, 150, -150, -250, -50, 50, -50, -150, 50, 150, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -6.8, 6.8, -3.4, 3.4, -16.5, 16.5, -1.7, 1.7, -10.9, 10.9, 33, -67, -167, 167, -183, 183, -17, 17, -33, 33, -50, 50, -67, 67, -83, 83, 0, 0, -116, 116, -133, 133, -150, 150, -5.8, 5.8, -21.5, 21.5, -27.3, 27.3, -43, 43, -48.8, 48.8, -53.3, 53.3, -60.4, 60.4, -64.9, 64.9, -70.7, 70.7, -86.4, 86.4, -92.2, 92.2, -107.9, 107.9, -113.7, 113.7, -22.2, 22.2, -44.4, 44.4, -66.7, 66.7, -88.9, 111.1][0 + accidental] || 0) : 0;
-
+    const base = ((mscoreMajorVersion == 4 && mscoreMinorVersion >= 2) || mscoreMajorVersion > 4) ? ([0,0,0,0,0,0,0,0,0,0,0,-50,-150,50,-50,150,50,250,150,-150,-250,-50,50,-50,-150,50,150,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-6.8,6.8,-3.4,3.4,-16.5,16.5,-1.7,1.7,-10.9,10.9,0,0,0,33,-67,-167,167,-183,183,-17,17,-33,33,-50,50,-67,67,-83,83,0,0,-116,116,-133,133,-150,150,-5.8,5.8,-21.5,21.5,-27.3,27.3,-43,43,-48.8,48.8,-53.3,53.3,-60.4,60.4,-64.9,64.9,-70.7,70.7,-86.4,86.4,-92.2,92.2,-107.9,107.9,-113.7,113.7,-22.2,22.2,-44.4,44.4,-66.7,66.7,-88.9,88.9,111.1,0][0 + accidental] || 0) : 0;
+    //log("Accidental: " + (0 + accidental));
+    //log("Base: " + base);
     return Math.log(targetHz / pitchHz) / Math.log(2) * 1200 - base;
   }
   
@@ -310,34 +311,32 @@ MuseScore {
       NINE_TWELFTH_SHARP: 
       */
 
-      /* WIP
-      SAGITTAL_5V7KD: 
-      SAGITTAL_5V7KU: 
-      SAGITTAL_5CD: 1 / _5C,
-      SAGITTAL_5CU:     _5C,
-      SAGITTAL_7CD: 1 / _7C,
-      SAGITTAL_7CU:     _7C,
-      SAGITTAL_25SDD: Math.pow(_5C, -2),
-      SAGITTAL_25SDU: Math.pow(_5C,  2),
-      SAGITTAL_35MDD: 1 / _5C / _7C,
-      SAGITTAL_35MDU:     _5C * _7C,
-      SAGITTAL_11MDD: 1 / _11C,
-      SAGITTAL_11MDU:      11C,
-      SAGITTAL_11LDD: 
-      SAGITTAL_11LDU: 
-      SAGITTAL_35LDD: 
-      SAGITTAL_35LDU: 
-      SAGITTAL_FLAT25SU: Math.pow(SHARP, -1) / _5C,
-      SAGITTAL_SHARP25SD: SHARP * _5C,
-      SAGITTAL_FLAT7CU: Math.pow(SHARP, -1) / _7C,
-      SAGITTAL_SHARP7CD: SHARP * _7C,
-      SAGITTAL_SHARP5CD: SHARP * _5C,
-      SAGITTAL_SHARP5V7KD: SHARP * 1.02, // Approximation
-      SAGITTAL_FLAT5CU: Math.pow(SHARP, -1) / _5C,
-      SAGITTAL_FLAT5V7KU: Math.pow(SHARP, -1) * 0.98, // Approximation
-      SAGITTAL_FLAT: 1 / SHARP,
-      SAGITTAL_SHARP:    SHARP
-      */
+      SAGITTAL_5V7KD: 5103/5120,
+      SAGITTAL_5V7KU: 5120/5103,
+      SAGITTAL_5CD: 80/81,
+      SAGITTAL_5CU: 81/80,
+      SAGITTAL_7CD: 63/64,
+      SAGITTAL_7CU: 64/63,
+      SAGITTAL_25SDD: 6400/6561,
+      SAGITTAL_25SDU: 6561/6400,
+      SAGITTAL_35MDD: 35/36,
+      SAGITTAL_35MDU: 36/35,
+      SAGITTAL_11MDD: 32/33,
+      SAGITTAL_11MDU: 33/32,
+      SAGITTAL_11LDD: 704/729,
+      SAGITTAL_11LDU: 729/704,
+      SAGITTAL_35LDD: 8192/8505,
+      SAGITTAL_35LDU: 8505/8192, // NOTE: APPEARS WRONG IN MUSESCORE
+      SAGITTAL_FLAT25SU: 24/25,
+      SAGITTAL_SHARP25SD: 25/24,
+      SAGITTAL_FLAT7CU: 131072/137781,
+      SAGITTAL_SHARP7CD: 137781/131072,
+      SAGITTAL_FLAT5CU: 128/135,
+      SAGITTAL_SHARP5CD: 135/128,
+      SAGITTAL_FLAT5V7KU: 10485760/11160261,
+      SAGITTAL_SHARP5V7KD: 11160261/10485760,
+      SAGITTAL_FLAT:  2048/2187,
+      SAGITTAL_SHARP: 2187/2048
     };
 
     if (accidentals[accidental]) return accidentals[accidental];
