@@ -1,12 +1,13 @@
-import MuseScore 3.0
 import QtQuick 2.9
+import MuseScore 3.0
 import FileIO 3.0
 
 MuseScore {
   menuPath: "Plugins.XenKit"
+  title: "XenKit"
   description: "Configurable multipurpose xenharmonic tuner for Musescore"
   version: "1.0"
-
+  categoryCode: "playback"
 
   function getOctave (note) {
     /**
