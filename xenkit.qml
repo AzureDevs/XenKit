@@ -364,12 +364,12 @@ MuseScore {
     const apotome = Math.pow(stepSize, 7 * fifth - 4 * edo);
     const naturals = [
       0,
-      (2 * fifth) % edo,
-      (4 * fifth) % edo,
+      (2 * fifth) -     edo,
+      (4 * fifth) - 2 * edo,
       edo - fifth,
       fifth,
-      (3 * fifth) % edo,
-      (5 * fifth) % edo
+      (3 * fifth) -     edo,
+      (5 * fifth) - 2 * edo
     ].map(function (i) {
       return Math.pow(stepSize, i);
     });
@@ -537,8 +537,8 @@ MuseScore {
       for (const part of Object.values(cursor.score.parts)) {
         if (part.hasDrumStaff) drums.push(Math.floor(part.startTrack / 4)); // assume all drumsets only have 1 staff!
       }
-      log("DRUMS:");
-      log(JSON.stringify(drums));
+      // log("DRUMS:");
+      // log(JSON.stringify(drums));
 
       curScore.startCmd();
 
