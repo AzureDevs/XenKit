@@ -4,10 +4,11 @@ import FileIO 3.0
 
 MuseScore {
   menuPath: "Plugins.XenKit"
-  title: "XenKit"
+  // title: "XenKit"
   description: "Configurable multipurpose xenharmonic tuner for Musescore"
   version: "1.0"
-  categoryCode: "playback"
+  // categoryCode: "playback"
+
 
   function getOctave (note) {
     /**
@@ -37,7 +38,7 @@ MuseScore {
     //log("Base: " + base);
     return Math.log(targetHz / pitchHz) / Math.log(2) * 1200 - base;
   }
-  
+
   function parseInterval (v, params) {
     /**
      * parses a combination of cents, steps, ratios, monzos, accidentals, or commas into a ratio
@@ -534,7 +535,9 @@ MuseScore {
 
       // loop through each part to find drum parts, and ignore during tuning
       const drums = [];
-      for (const part of Object.values(cursor.score.parts)) {
+      const parts = Object.keys(cursor.score.parts);
+      for (var i = 0; i < parts.length; i++) {
+        const part = cursor.score.parts[parts[i]];
         if (part.hasDrumStaff) drums.push(Math.floor(part.startTrack / 4)); // assume all drumsets only have 1 staff!
       }
       // log("DRUMS:");
@@ -545,7 +548,9 @@ MuseScore {
       // loop through each staff
       for (var i = 0; i < curScore.nstaves * 4; i++) {
         // is a drum? too bad
-        if (drums.includes(Math.floor(i / 4))) continue;
+        if (drums.some(function (e) {
+          return e === Math.floor(i / 4);
+        })) continue;
 
         log("----- Track " + i + " -----");
         cursor.track = i;
@@ -562,6 +567,8 @@ MuseScore {
           }
 
           const annotations = readAnnotations(cursor.segment.annotations);
+
+          // check for a root note retune
 
           // check for a new temperament
           if (annotations.temperament !== undefined && i === 0) {
@@ -617,14 +624,13 @@ MuseScore {
 
   Component.onCompleted: {
     if (mscoreMajorVersion >= 4) {
-      if (mscoreMinorVersion >= 4) {
-        title: "XenKit"
-      } else {
-        title = qsTr("XenKit");
-      }
-      //thumbnailName = "some_thumbnail.png";
+      if (mscoreMinorVersion >= 4) title: "XenKit"
+      else title = qsTr("XenKit");
+      // thumbnailName = "thumbnail.png";
       categoryCode = "playback";
     }
+    // parent.setProperty("title", "XenKit");
+    // parent.setProperty("categoryCode", "playback");
   }
 
   FileIO {
