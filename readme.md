@@ -112,7 +112,6 @@ This is useful if you are repeatedly pumping a comma in JI, and to avoid overly 
 - Local key signatures / temperaments
 - The ability to fully customize accidentals like in @euwbah's XenTuner plugin
 - Support for symbols if MS API allows
-- Some accidentals aren't supported, like half-sharps and sagittal
 
 
 ## Contact

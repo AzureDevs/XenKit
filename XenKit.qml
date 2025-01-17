@@ -177,7 +177,17 @@ MuseScore {
      */
 
 
-    const SHARP = (params && params.apotome) || 2187/2048, _5C = (params && params.stepSize) || 81/80, _7C = 64/63, _11C = 33/32, _13C = 27/26, _17C = 2187/2176, _19C = 513/512, _23C = 736/729, _31C = 32/31;
+    const SHARP = (params && params.apotome) || 2187/2048,
+          HALF_SHARP = Math.sqrt(SHARP),
+          _5C = (params && params.stepSize) || 81/80,
+          _7C = 64/63,
+          _11C = 33/32,
+          _13C = 27/26,
+          _17C = 2187/2176,
+          _19C = 513/512,
+          _23C = 736/729,
+          _31C = 32/31;
+    
     const accidentals = {
       NONE:    1,
       NATURAL: 1,
@@ -207,11 +217,13 @@ MuseScore {
       FLAT2_ARROW_UP:    Math.pow(SHARP, -2) * _5C,
       FLAT2_ARROW_DOWN:  Math.pow(SHARP, -2) / _5C,
       
+      
+      MIRRORED_FLAT:  Math.pow(HALF_SHARP, -1),
+      MIRRORED_FLAT2: Math.pow(HALF_SHARP, -1) * Math.pow(SHARP, -1), // db
+      SHARP_SLASH:             HALF_SHARP,
+      SHARP_SLASH4:            HALF_SHARP      *          SHARP,
+      
       /*
-      MIRRORED_FLAT: 
-      MIRRORED_FLAT2: 
-      SHARP_SLASH: 
-      SHARP_SLASH4: 
       FLAT_SLASH2: 
       FLAT_SLASH: 
       SHARP_SLASH3: 
@@ -288,30 +300,30 @@ MuseScore {
 
       SORI: 
       KORON: 
-
-      TEN_TWELFTH_FLAT: 
-      TEN_TWELFTH_SHARP: 
-      ELEVEN_TWELFTH_FLAT: 
-      ELEVEN_TWELFTH_SHARP: 
-      ONE_TWELFTH_FLAT: 
-      ONE_TWELFTH_SHARP: 
-      TWO_TWELFTH_FLAT: 
-      TWO_TWELFTH_SHARP: 
-      THREE_TWELFTH_FLAT: 
-      THREE_TWELFTH_SHARP: 
-      FOUR_TWELFTH_FLAT: 
-      FOUR_TWELFTH_SHARP: 
-      FIVE_TWELFTH_FLAT: 
-      FIVE_TWELFTH_SHARP: 
-      SIX_TWELFTH_FLAT: 
-      SIX_TWELFTH_SHARP: 
-      SEVEN_TWELFTH_FLAT: 
-      SEVEN_TWELFTH_SHARP: 
-      EIGHT_TWELFTH_FLAT: 
-      EIGHT_TWELFTH_SHARP: 
-      NINE_TWELFTH_FLAT: 
-      NINE_TWELFTH_SHARP: 
       */
+
+      ONE_TWELFTH_FLAT:     Math.pow(_5C, 2) * Math.pow(HALF_SHARP, -1),
+      ONE_TWELFTH_SHARP:             _5C,
+      TWO_TWELFTH_FLAT:              _5C     * Math.pow(HALF_SHARP, -1),
+      TWO_TWELFTH_SHARP:    Math.pow(_5C, 2),
+      THREE_TWELFTH_FLAT:                      Math.pow(HALF_SHARP, -1),
+      THREE_TWELFTH_SHARP:                              HALF_SHARP,
+      FOUR_TWELFTH_FLAT:    Math.pow(_5C, 2)                            * Math.pow(SHARP, -1),
+      FOUR_TWELFTH_SHARP:            _5C     *          HALF_SHARP,
+      FIVE_TWELFTH_FLAT:             _5C                                * Math.pow(SHARP, -1),
+      FIVE_TWELFTH_SHARP:   Math.pow(_5C, 2) *          HALF_SHARP,
+      SIX_TWELFTH_FLAT:                                                   Math.pow(SHARP, -1),
+      SIX_TWELFTH_SHARP:                                                           SHARP,
+      SEVEN_TWELFTH_FLAT:   Math.pow(_5C, 2) * Math.pow(HALF_SHARP, -1) * Math.pow(SHARP, -1),
+      SEVEN_TWELFTH_SHARP:           _5C                                *          SHARP,
+      EIGHT_TWELFTH_FLAT:            _5C     * Math.pow(HALF_SHARP, -1) * Math.pow(SHARP, -1),
+      EIGHT_TWELFTH_SHARP:  Math.pow(_5C, 2)                            *          SHARP,
+      NINE_TWELFTH_FLAT:                       Math.pow(HALF_SHARP, -1) * Math.pow(SHARP, -1),
+      NINE_TWELFTH_SHARP:                               HALF_SHARP      *          SHARP,
+      TEN_TWELFTH_FLAT:     Math.pow(_5C, 2)                            * Math.pow(SHARP, -2),
+      TEN_TWELFTH_SHARP:             _5C     *          HALF_SHARP      *          SHARP,
+      ELEVEN_TWELFTH_FLAT:           _5C                                * Math.pow(SHARP, -2),
+      ELEVEN_TWELFTH_SHARP: Math.pow(_5C, 2) *          HALF_SHARP      *          SHARP,
 
       SAGITTAL_5V7KD: 5103/5120,
       SAGITTAL_5V7KU: 5120/5103,
@@ -442,20 +454,34 @@ MuseScore {
      * params- tuning parameters, if edo
      */
 
+    // tune grace notes before note
+    for (var i = 0; i < chord.graceNotes.length; i++) {
+      for (var j = 0; j < chord.graceNotes[i].notes.length; j++) {
+        if (chord.graceNotes[i].noteType & NoteType.GRACE8_AFTER || chord.graceNotes[i].noteType & NoteType.GRACE16_AFTER || chord.graceNotes[i].noteType & NoteType.GRACE32_AFTER) continue;
+
+        // grab any annotation accidentals
+        const lyric = chord.lyrics[i * chord.graceNotes.length + chord.graceNotes[i].notes.length - j - 1 + chord.notes.length] ? parseInterval(chord.lyrics[i * chord.graceNotes.length + chord.graceNotes[i].notes.length - j - 1 + chord.notes.length].text, params) || false : false;
+
+        tune(chord.graceNotes[i].notes[j], keysig, accidentalMap, lyric, relativity, params);
+      }
+    }
+
     // tune each note
     for (var i = 0; i < chord.notes.length; i++) {
       // grab any annotation accidentals
       const lyric = chord.lyrics[chord.notes.length - i - 1] ? parseInterval(chord.lyrics[chord.notes.length - i - 1].text, params) || false : false;
-      if (lyric) log("Tuned an annotation " + chord.lyrics[chord.notes.length - i - 1].text.replace(/&gt;/g, ">") + " to " + lyric);
+      // if (lyric) log("Tuned an annotation " + chord.lyrics[chord.notes.length - i - 1].text.replace(/&gt;/g, ">") + " to " + lyric);
 
       tune(chord.notes[i], keysig, accidentalMap, lyric, relativity, params);
     }
 
-    // tune each grace note
+    // tune grace notes after note
     for (var i = 0; i < chord.graceNotes.length; i++) {
-      for(var j = 0; j < chord.graceNotes[i].length; j++) {
+      for (var j = 0; j < chord.graceNotes[i].notes.length; j++) {
+        if (!(chord.graceNotes[i].noteType & NoteType.GRACE8_AFTER || chord.graceNotes[i].noteType & NoteType.GRACE16_AFTER || chord.graceNotes[i].noteType & NoteType.GRACE32_AFTER)) continue;
+
         // grab any annotation accidentals
-        const lyric = chord.lyrics[i * chord.graceNotes.length + chord.graceNotes[i].length - j - 1 + chord.notes.length] ? parseInterval(chord.lyrics[i * chord.graceNotes.length + chord.graceNotes[i].length - j - 1 + chord.notes.length].text, params) || false : false;
+        const lyric = chord.lyrics[i * chord.graceNotes.length + chord.graceNotes[i].notes.length - j - 1 + chord.notes.length] ? parseInterval(chord.lyrics[i * chord.graceNotes.length + chord.graceNotes[i].notes.length - j - 1 + chord.notes.length].text, params) || false : false;
 
         tune(chord.graceNotes[i].notes[j], keysig, accidentalMap, lyric, relativity, params);
       }
@@ -509,21 +535,30 @@ MuseScore {
     (typeof(quit) === 'undefined' ? Qt.quit : quit)();
   }
 
-  function log (msg, wipe) {
+  function clearLog () {
+    /**
+     * Wipes the log
+     */
+    return;
+    logs.write("");
+  }
+
+  function log (msg) {
     /**
      * Writes to the log and console
      *
-     * msg - the message to write
-     * wipe - wipe the logs if true
+     * msg - the message to write, or an array thereof
      */
+    if (typeof msg === "object") msg = msg.join(" ");
     console.log(msg);
     return;
-    logs.write((!wipe ? logs.read().replace(/\n+/g, "\n") : "") + msg);
+    logs.write((logs.read() + msg).trim().replace(/\n+/g, "\n"));
   }
 
 
   onRun: {
-    log("Tuner started running", true);
+    clearLog();
+    log("Tuner started running");
 
     try {
 
