@@ -522,7 +522,7 @@ MuseScore {
      * Finds active state given a map
      * Used to fetch the key signatures and other annotations for voices 2-4
      *
-     * tick - cursor.tick
+     * tick - segment.tick
      * map - map containing the tick and data
      */
     for (var i = 0; i < map.length; i++) {
@@ -560,9 +560,7 @@ MuseScore {
     clearLog();
     log("Tuner started running");
 
-    try {
-
-      const cursor = curScore.newCursor();
+    try { // try everything!
 
       const keysigMap = [ [ 0, [1, 1, 1, 1, 1, 1, 1] ] ],
             relativityMap = [ [ 0, 0 ] ], // relativity is off by default
@@ -570,9 +568,9 @@ MuseScore {
 
       // loop through each part to find drum parts, and ignore during tuning
       const drums = [];
-      const parts = Object.keys(cursor.score.parts);
+      const parts = Object.keys(curScore.parts);
       for (var i = 0; i < parts.length; i++) {
-        const part = cursor.score.parts[parts[i]];
+        const part = curScore.parts[parts[i]];
         if (part.hasDrumStaff) drums.push(Math.floor(part.startTrack / 4)); // assume all drumsets only have 1 staff!
       }
       // log("DRUMS:");
@@ -580,69 +578,69 @@ MuseScore {
 
       curScore.startCmd();
 
-      // loop through each staff
-      for (var i = 0; i < curScore.nstaves * 4; i++) {
+      // loop through each track
+      for (var track = 0; track < curScore.nstaves * 4; track++) {
         // is a drum? too bad
         if (drums.some(function (e) {
-          return e === Math.floor(i / 4);
+          return e === Math.floor(track / 4);
         })) continue;
 
-        log("----- Track " + i + " -----");
-        cursor.track = i;
-        cursor.rewind(Cursor.SCORE_START);
+        log("----- Track " + track + " -----");
 
-        var accidentalMap, measure;
+        var measure = curScore.firstMeasure;
+        while (measure) {
+          log("--m");
+          var segment = measure.firstSegment;
+          var accidentalMap = {};
+          while (segment) {
+            // log("-s");
 
-        while (cursor.segment) {
-          // check for a new measure to reset accidentals
-          if (!cursor.measure.is(measure)) {
-            log("-m");
-            measure = cursor.measure;
-            accidentalMap = {};
-          }
+            const tick = segment.tick;
+            const element = segment.elementAt(track);
+            const annotations = readAnnotations(segment.annotations);
 
-          const annotations = readAnnotations(cursor.segment.annotations);
+            // check for a root note retune
 
-          // check for a root note retune
-
-          // check for a new temperament
-          if (annotations.temperament !== undefined && i === 0) {
-            if (cursor.tick === 0) paramsMap.pop();
-            if (annotations.temperament === "JI") paramsMap.push([cursor.tick, false]);
-            else paramsMap.push([cursor.tick, calcParams(Number(annotations.temperament))]);
-            log("Changed temperament to " + annotations.temperament);
-            log(JSON.stringify(paramsMap));
-          }
-          const params = getFromMap(cursor.tick, paramsMap);
-
-          // check for new default relativity
-          if (annotations.relativity !== undefined && i === 0) {
-            if (cursor.tick === 0) relativityMap.pop();
-            relativityMap.push([cursor.tick, annotations.relativity]);
-            log("Changed default relativity to " + annotations.relativity);
-          }
-          const relativity = getFromMap(cursor.tick, relativityMap);
-          
-          // check for a new key
-          var keysig = getFromMap(cursor.tick, keysigMap);
-          if (i === 0) {
-            const newKey = annotations.keysig && parseKeySig(annotations.keysig, params);
-            if (newKey) {
-              if (cursor.tick === 0) keysigMap.pop();
-              keysigMap.push([cursor.tick, keysig = keysig.map(function (v, i) {
-                const r = newKey[i][1] === -1 ? relativity : newKey[i][1];
-                return (r ? v : 1) * newKey[i][0];
-              })]);
-              log(JSON.stringify(keysigMap));
+            // check for a new temperament
+            if (annotations.temperament !== undefined && track === 0) {
+              if (tick === 0) paramsMap.pop();
+              if (annotations.temperament === "JI") paramsMap.push([tick, false]);
+              else paramsMap.push([tick, calcParams(Number(annotations.temperament))]);
+              log("Changed temperament to " + annotations.temperament);
+              log(JSON.stringify(paramsMap));
             }
-          }
+            const params = getFromMap(tick, paramsMap);
 
-          // tune each chord
-          if (cursor.element.type === Element.CHORD) {
-            tuneChord(cursor.element, keysig, accidentalMap, relativity, params);
-          }
+            // check for new default relativity
+            if (annotations.relativity !== undefined && track === 0) {
+              if (tick === 0) relativityMap.pop();
+              relativityMap.push([tick, annotations.relativity]);
+              log("Changed default relativity to " + annotations.relativity);
+            }
+            const relativity = getFromMap(tick, relativityMap);
+            
+            // check for a new key
+            var keysig = getFromMap(tick, keysigMap);
+            if (track === 0) {
+              const newKey = annotations.keysig && parseKeySig(annotations.keysig, params);
+              if (newKey) {
+                if (tick === 0) keysigMap.pop();
+                keysigMap.push([tick, keysig = keysig.map(function (v, i) {
+                  const r = newKey[i][1] === -1 ? relativity : newKey[i][1];
+                  return (r ? v : 1) * newKey[i][0];
+                })]);
+                log(JSON.stringify(keysigMap));
+              }
+            }
 
-          cursor.next();
+            // tune each chord
+            if (element && element.type === Element.CHORD) {
+              tuneChord(element, keysig, accidentalMap, relativity, params);
+            }
+
+            segment = segment.nextInMeasure;
+          }
+          measure = measure.nextMeasure;
         }
       }
 
