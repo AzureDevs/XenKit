@@ -34,8 +34,8 @@ MuseScore {
 
     // MS 4.2+ (offsets from xentuner plugin)
     const base = ((mscoreMajorVersion == 4 && mscoreMinorVersion >= 2) || mscoreMajorVersion > 4) ? ([0,0,0,0,0,0,0,0,0,0,0,-50,-150,50,-50,150,50,250,150,-150,-250,-50,50,-50,-150,50,150,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-6.8,6.8,-3.4,3.4,-16.5,16.5,-1.7,1.7,-10.9,10.9,0,0,0,33,-67,-167,167,-183,183,-17,17,-33,33,-50,50,-67,67,-83,83,0,0,-116,116,-133,133,-150,150,-5.8,5.8,-21.5,21.5,-27.3,27.3,-43,43,-48.8,48.8,-53.3,53.3,-60.4,60.4,-64.9,64.9,-70.7,70.7,-86.4,86.4,-92.2,92.2,-107.9,107.9,-113.7,113.7,-22.2,22.2,-44.4,44.4,-66.7,66.7,-88.9,88.9,111.1,0][0 + accidental] || 0) : 0;
-    //log("Accidental: " + (0 + accidental));
-    //log("Base: " + base);
+    // log("Accidental: " + (0 + accidental));
+    // log("Base: " + base);
     return Math.log(targetHz / pitchHz) / Math.log(2) * 1200 - base;
   }
 
@@ -70,6 +70,8 @@ MuseScore {
       "#": (params && params.apotome) || 2187/2048,
       "b": params && params.apotome ? 1 / params.apotome : 2048/2187,
       "x": Math.pow((params && params.apotome) || 2187/2048, 2),
+      "t": Math.pow((params && params.apotome) || 2187/2048, 1/2),
+      "d": Math.pow((params && params.apotome) || 2187/2048, -1/2),
       "^": (params && params.stepSize) || 1,
       "v": params && params.stepSize ? 1 / params.stepSize : 1
     };
@@ -126,9 +128,9 @@ MuseScore {
         else return false; // invalid comma
         continue;
       }
-      if (/^\d*[#bx\^v]/.test(v.slice(i))) {
+      if (/^\d*[#bxtd\^v]/.test(v.slice(i))) {
         // accidentals
-        const quantifier = Number(v.slice(i, i += v.slice(i).search(/[#bx\^v]/))) || 1;
+        const quantifier = Number(v.slice(i, i += v.slice(i).search(/[#bxtd\^v]/))) || 1;
         prod *= Math.pow(accidentals[v.charAt(i)], quantifier);
         continue;
       }
@@ -137,6 +139,27 @@ MuseScore {
     }
     
     return [prod, relativity];
+  }
+
+  function parseNote (note, params) {
+    /**
+     * Parses a note into it's hertz value
+     *
+     * note - the note or absolute hertz value to parse
+     * params - tuning params
+     */
+
+    // absolute hertz value
+    if (/^(\d+)\s*(?:hz)?$/.test(note)) return note.match(/^(\d+)\s*(?:hz)?$/)[1];
+    
+    const naturals = (params && params.naturals) || [1, 9/8, 81/64, 4/3, 3/2, 27/16, 243/128];
+    const middleC = 440 * Math.pow(2, -9/12); // C4
+
+    const natural = ["C", "D", "E", "F", "G", "A", "B"].indexOf(note.match(/^([A-G])(?:\d*[#bxtd\^v])*\d*$/)[1]);
+    const accidental = note.match(/[A-G]((?:\d*[#bxtd\^v])*)\d*/)[1];
+    const octave = note.match(/[A-G](?:\d*[#bxtd\^v])*(\d*)/)[1] || 4; // TODO: check for octavelessness instead of assuming octave 4
+
+    return middleC * naturals[natural] * parseInterval(accidental, params)[0] * Math.pow(2, octave - 4);
   }
 
   function parseKeySig (sig, params) {
@@ -390,7 +413,7 @@ MuseScore {
     return { stepSize: stepSize, apotome: apotome, naturals: naturals };
   }
 
-  function tune (note, keysig, accidentalMap, lyric, relativity, params) {
+  function tune (note, keysig, accidentalMap, lyric, relativity, params, reference) {
     /**
      * Tunes the note
      *
@@ -400,6 +423,7 @@ MuseScore {
      * lyric - the lyric accidental [v, rel]
      * relativity - the default relativity
      * params - tuning params, if edo
+     * reference - cents offset from A=440hz
      */
 
     const naturals = (params && params.naturals) || [1, 9/8, 81/64, 4/3, 3/2, 27/16, 243/128];
@@ -438,12 +462,15 @@ MuseScore {
 
     note.tuning = calcOffset(v, note, note.accidentalType); // note: an accidentalMap to offset the default effective accidental (MS 4.2+) is not required because of the relative tuning :D
 
+    // reference note
+    note.tuning += reference;
+
     log("Tuned a note to " + Math.round(note.tuning * 1000) / 1000);
     
     return note.tuning;
   }
 
-  function tuneChord (chord, keysig, accidentalMap, relativity, params) {
+  function tuneChord (chord, keysig, accidentalMap, relativity, params, reference) {
     /**
      * Tunes the chord
      *
@@ -451,7 +478,8 @@ MuseScore {
      * keysig - the active key signature
      * accidentalMap - the accidental map
      * relativity - the default relativity
-     * params- tuning parameters, if edo
+     * params - tuning parameters, if edo
+     * reference - cents offset from A=440hz
      */
 
     // tune grace notes before note
@@ -462,7 +490,7 @@ MuseScore {
         // grab any annotation accidentals
         const lyric = chord.lyrics[i * chord.graceNotes.length + chord.graceNotes[i].notes.length - j - 1 + chord.notes.length] ? parseInterval(chord.lyrics[i * chord.graceNotes.length + chord.graceNotes[i].notes.length - j - 1 + chord.notes.length].text, params) || false : false;
 
-        tune(chord.graceNotes[i].notes[j], keysig, accidentalMap, lyric, relativity, params);
+        tune(chord.graceNotes[i].notes[j], keysig, accidentalMap, lyric, relativity, params, reference);
       }
     }
 
@@ -472,7 +500,7 @@ MuseScore {
       const lyric = chord.lyrics[chord.notes.length - i - 1] ? parseInterval(chord.lyrics[chord.notes.length - i - 1].text, params) || false : false;
       // if (lyric) log("Tuned an annotation " + chord.lyrics[chord.notes.length - i - 1].text.replace(/&gt;/g, ">") + " to " + lyric);
 
-      tune(chord.notes[i], keysig, accidentalMap, lyric, relativity, params);
+      tune(chord.notes[i], keysig, accidentalMap, lyric, relativity, params, reference);
     }
 
     // tune grace notes after note
@@ -483,7 +511,7 @@ MuseScore {
         // grab any annotation accidentals
         const lyric = chord.lyrics[i * chord.graceNotes.length + chord.graceNotes[i].notes.length - j - 1 + chord.notes.length] ? parseInterval(chord.lyrics[i * chord.graceNotes.length + chord.graceNotes[i].notes.length - j - 1 + chord.notes.length].text, params) || false : false;
 
-        tune(chord.graceNotes[i].notes[j], keysig, accidentalMap, lyric, relativity, params);
+        tune(chord.graceNotes[i].notes[j], keysig, accidentalMap, lyric, relativity, params, reference);
       }
     }
   }
@@ -512,7 +540,11 @@ MuseScore {
       if (/^(JI|Just\s+Intonation|Pythagorean)$/i.test(text)) map.temperament = "JI";
       if (/^\d+(-|\s+)?(ED[O2]|Equal\s+Divisions\s+of\s+an\s+Octave|T?ET|Tone\s+Equal\s+Temperament)$/i.test(text)) map.temperament = text.match(/(\d+)/i)[0];
 
-      // TODO: check new temperament and config settings
+      // check reference note change
+      if (/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*([A-G](?:\d*[#bxtd\^v])*\d*)$/i.test(text)) map.referenceNote = text.match(/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*([A-G](?:\d*[#bxtd\^v])*\d*)$/i).slice(1);
+      if (/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*(\d+\s*(?:hz)?)$/i.test(text)) map.referenceNote = text.match(/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*(\d+\s*(?:hz)?)$/i).slice(1).reverse();
+      // B = A tunes old B to new A
+      // A = 442 tunes new A to 442hz
     }
     return map;
   }
@@ -528,7 +560,7 @@ MuseScore {
     for (var i = 0; i < map.length; i++) {
       if (map[i][0] <= tick && (!map[i + 1] || map[i + 1][0] > tick)) return map[i][1];
     }
-    return [1, 1, 1, 1, 1, 1, 1];
+    return null;
   }
 
   function qtQuit () {
@@ -549,9 +581,9 @@ MuseScore {
      *
      * msg - the message to write, or an array thereof
      */
+    return;
     if (typeof msg === "object") msg = msg.join(" ");
     console.log(msg);
-    return;
     logs.write((logs.read() + msg).trim().replace(/\n+/g, "\n"));
   }
 
@@ -562,9 +594,10 @@ MuseScore {
 
     try { // try everything!
 
-      const keysigMap = [ [ 0, [1, 1, 1, 1, 1, 1, 1] ] ],
-            relativityMap = [ [ 0, 0 ] ], // relativity is off by default
-            paramsMap = [ [ 0, calcParams(12) ] ]; // default temperament is 12EDO
+      const keysigMap     = [],
+            relativityMap = [],
+            paramsMap     = [],
+            referenceMap  = [];
 
       // loop through each part to find drum parts, and ignore during tuning
       const drums = [];
@@ -590,8 +623,15 @@ MuseScore {
         var measure = curScore.firstMeasure;
         while (measure) {
           log("--m");
+
           var segment = measure.firstSegment;
-          var accidentalMap = {};
+          var accidentalMap = {}
+
+          var keysig = [1, 1, 1, 1, 1, 1, 1]; // default to no change
+          var relativity = 0; // default to absolute mode
+          var params = calcParams(12); // default to 12EDO
+          var reference = 0; // default to 0 cents offset
+
           while (segment) {
             // log("-s");
 
@@ -599,17 +639,20 @@ MuseScore {
             const element = segment.elementAt(track);
             const annotations = readAnnotations(segment.annotations);
 
-            // check for a root note retune
+            // check for a reference note retune part 1
+            if (getFromMap(tick, referenceMap) !== null) reference = getFromMap(tick, referenceMap); // cents from 440hz
+            if (annotations.referenceNote !== undefined && track === 0) {
+              annotations.referenceNote[0] = parseNote(annotations.referenceNote[0], params);
+            }
 
             // check for a new temperament
             if (annotations.temperament !== undefined && track === 0) {
-              if (tick === 0) paramsMap.pop();
               if (annotations.temperament === "JI") paramsMap.push([tick, false]);
               else paramsMap.push([tick, calcParams(Number(annotations.temperament))]);
               log("Changed temperament to " + annotations.temperament);
-              log(JSON.stringify(paramsMap));
+              // log(JSON.stringify(paramsMap));
             }
-            const params = getFromMap(tick, paramsMap);
+            if (getFromMap(tick, paramsMap) !== null) params = getFromMap(tick, paramsMap);
 
             // check for new default relativity
             if (annotations.relativity !== undefined && track === 0) {
@@ -617,10 +660,10 @@ MuseScore {
               relativityMap.push([tick, annotations.relativity]);
               log("Changed default relativity to " + annotations.relativity);
             }
-            const relativity = getFromMap(tick, relativityMap);
+            if (getFromMap(tick, relativityMap) !== null) relativity = getFromMap(tick, relativityMap);
             
             // check for a new key
-            var keysig = getFromMap(tick, keysigMap);
+            if (getFromMap(tick, keysigMap) !== null) keysig = getFromMap(tick, keysigMap);
             if (track === 0) {
               const newKey = annotations.keysig && parseKeySig(annotations.keysig, params);
               if (newKey) {
@@ -633,9 +676,18 @@ MuseScore {
               }
             }
 
+            // check for a reference note retune part 2
+            if (annotations.referenceNote !== undefined && track === 0) {
+              annotations.referenceNote[1] = parseNote(annotations.referenceNote[1], params);
+              log([annotations.referenceNote[0], "/", annotations.referenceNote[1]]);
+              reference += Math.log(annotations.referenceNote[0] / annotations.referenceNote[1]) / Math.log(2) * 1200;
+              referenceMap.push([tick, reference]);
+            }
+            if (getFromMap(tick, referenceMap) !== null) reference = getFromMap(tick, referenceMap);
+
             // tune each chord
             if (element && element.type === Element.CHORD) {
-              tuneChord(element, keysig, accidentalMap, relativity, params);
+              tuneChord(element, keysig, accidentalMap, relativity, params, reference);
             }
 
             segment = segment.nextInMeasure;

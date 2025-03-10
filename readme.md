@@ -74,7 +74,7 @@ To annotate a key signature, write its accidentals from C to B separated by `|`s
 You can also append a global multiplier with three dots `...` after the key signature, which will be applied to all naturals.
 
 Examples:
-- C# D# F# G#: `#|#||#|#|`
+- C# D# F# G#: `#|#||#|#||`
 - 5-comma to every note `...5,`
 - 10¢ increase with F# `|||#|||...10c`
 - individual naturals can be made relative or absolute: `=#|||=#|||*b`
@@ -104,6 +104,25 @@ This is useful if you are repeatedly pumping a comma in JI, and to avoid overly 
 
 ![Comma Pump](img/CommaPump.png)
 
+
+### Setting Reference Note
+Set any note to a given frequency
+`A = 440`
+`A = 440hz`
+`C = 261.626`
+`A5 = 880`
+
+> [!IMPORTANT]
+> If an octave number is not indicated, it will default to 4.
+
+Or equate a note from the previous temperament to a note in the new temperament:
+`B = A` will tune the new A to the old B
+`B4 = A4`
+`B# = A#`
+`Bb2v = A` any accidentals are parsed as if it was a lyric accidental.
+
+> [!WARNING]
+> Reference notes set using this manner will always be relative to each other (because the note is tuned to that temperament)! Additionally, mind octave numbers (C4 = B3 is necessary instead of C = B).
 
 ## Planned Features (and workarounds)
 
