@@ -106,20 +106,20 @@ This is useful if you are repeatedly pumping a comma in JI, and to avoid overly 
 
 
 ### Setting Reference Note
-Set any note to a given frequency
-`A = 440`
-`A = 440hz`
-`C = 261.626`
-`A5 = 880`
+Set any note to a given frequency:
+- `A = 440`
+- `A = 440hz`
+- `C = 261.626`
+- `A5 = 880`
 
 > [!IMPORTANT]
 > If an octave number is not indicated, it will default to 4.
 
 Or equate a note from the previous temperament to a note in the new temperament:
-`B = A` will tune the new A to the old B
-`B4 = A4`
-`B# = A#`
-`Bb2v = A` any accidentals are parsed as if it was a lyric accidental.
+- `B = A` will tune the new A to the old B
+- `B4 = A4`
+- `B# = A#`
+- `Bb2v = A` any accidentals are parsed as if it was a lyric accidental.
 
 > [!WARNING]
 > Reference notes set using this manner will always be relative to each other (because the note is tuned to that temperament)! Additionally, mind octave numbers (C4 = B3 is necessary instead of C = B).
