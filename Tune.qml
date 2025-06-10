@@ -3,8 +3,8 @@ import MuseScore 3.0
 import FileIO 3.0
 
 MuseScore {
-  menuPath: "Plugins.XenKit"
-  // title: "XenKit"
+  menuPath: "Plugins.XenKit.Tune"
+  // title: "Tune"
   description: "Configurable multipurpose xenharmonic tuner for Musescore"
   version: "1.0"
   // categoryCode: "playback"
@@ -143,7 +143,7 @@ MuseScore {
 
   function parseNote (note, params) {
     /**
-     * Parses a note into it's hertz value
+     * Parses a note into its hertz value
      *
      * note - the note or absolute hertz value to parse
      * params - tuning params
@@ -158,7 +158,7 @@ MuseScore {
     const natural = ["C", "D", "E", "F", "G", "A", "B"].indexOf(note.match(/^([A-G])(?:\d*[#bxtd\^v])*\d*$/)[1]);
     const accidental = note.match(/[A-G]((?:\d*[#bxtd\^v])*)\d*/)[1];
     const octave = note.match(/[A-G](?:\d*[#bxtd\^v])*(\d*)/)[1] || 4; // TODO: check for octavelessness instead of assuming octave 4
-
+    
     return middleC * naturals[natural] * parseInterval(accidental, params)[0] * Math.pow(2, octave - 4);
   }
 
@@ -541,10 +541,11 @@ MuseScore {
       if (/^\d+(-|\s+)?(ED[O2]|Equal\s+Divisions\s+of\s+an\s+Octave|T?ET|Tone\s+Equal\s+Temperament)$/i.test(text)) map.temperament = text.match(/(\d+)/i)[0];
 
       // check reference note change
-      if (/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*([A-G](?:\d*[#bxtd\^v])*\d*)$/i.test(text)) map.referenceNote = text.match(/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*([A-G](?:\d*[#bxtd\^v])*\d*)$/i).slice(1);
-      if (/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*(\d+\s*(?:hz)?)$/i.test(text)) map.referenceNote = text.match(/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*(\d+\s*(?:hz)?)$/i).slice(1).reverse();
+      if (/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*([A-G](?:\d*[#bxtd\^v])*\d*)$/i.test(text)) map.referenceNote = [...text.match(/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*([A-G](?:\d*[#bxtd\^v])*\d*)$/i).slice(1), false];
+      if (/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*(\d+\s*(?:hz)?)$/i.test(text)) map.referenceNote = [...text.match(/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*(\d+\s*(?:hz)?)$/i).slice(1).reverse(), true];
       // B = A tunes old B to new A
       // A = 442 tunes new A to 442hz
+      // .referenceNote[2] is true if the change is absolute
     }
     return map;
   }
@@ -564,14 +565,13 @@ MuseScore {
   }
 
   function qtQuit () {
-    (typeof(quit) === 'undefined' ? Qt.quit : quit)();
+    (typeof(quit) === "undefined" ? Qt.quit : quit)();
   }
 
   function clearLog () {
     /**
      * Wipes the log
      */
-    return;
     logs.write("");
   }
 
@@ -581,8 +581,9 @@ MuseScore {
      *
      * msg - the message to write, or an array thereof
      */
-    return;
+    //return;
     if (typeof msg === "object") msg = msg.join(" ");
+    msg = "[MAIN] " + msg;
     console.log(msg);
     logs.write((logs.read() + msg).trim().replace(/\n+/g, "\n"));
   }
@@ -614,9 +615,10 @@ MuseScore {
       // loop through each track
       for (var track = 0; track < curScore.nstaves * 4; track++) {
         // is a drum? too bad
-        if (drums.some(function (e) {
+        var isDrum = drums.some(function (e) {
           return e === Math.floor(track / 4);
-        })) continue;
+        });
+        if (isDrum && track > 0) continue;
 
         log("----- Track " + track + " -----");
 
@@ -680,13 +682,13 @@ MuseScore {
             if (annotations.referenceNote !== undefined && track === 0) {
               annotations.referenceNote[1] = parseNote(annotations.referenceNote[1], params);
               log([annotations.referenceNote[0], "/", annotations.referenceNote[1]]);
-              reference += Math.log(annotations.referenceNote[0] / annotations.referenceNote[1]) / Math.log(2) * 1200;
+              reference = (annotations.referenceNote[2] ? 0 : reference) + Math.log(annotations.referenceNote[0] / annotations.referenceNote[1]) / Math.log(2) * 1200;
               referenceMap.push([tick, reference]);
             }
             if (getFromMap(tick, referenceMap) !== null) reference = getFromMap(tick, referenceMap);
 
-            // tune each chord
-            if (element && element.type === Element.CHORD) {
+            // tune each chord if not drum
+            if (element && element.type === Element.CHORD && !isDrum) {
               tuneChord(element, keysig, accidentalMap, relativity, params, reference);
             }
 
@@ -709,12 +711,12 @@ MuseScore {
 
   Component.onCompleted: {
     if (mscoreMajorVersion >= 4) {
-      if (mscoreMinorVersion >= 4) title: "XenKit"
-      else title = qsTr("XenKit");
+      if (mscoreMinorVersion >= 4) title: "Tune"
+      else title = qsTr("Tune");
       // thumbnailName = "thumbnail.png";
       categoryCode = "playback";
     }
-    // parent.setProperty("title", "XenKit");
+    // parent.setProperty("title", "Tune");
     // parent.setProperty("categoryCode", "playback");
   }
 
