@@ -4,10 +4,10 @@ import FileIO 3.0
 
 MuseScore {
   menuPath: "Plugins.XenKit.Tune"
-  // title: "Tune"
+  //4.4 title: "Tune"
   description: "Configurable multipurpose xenharmonic tuner for Musescore"
   version: "1.0"
-  // categoryCode: "playback"
+  //4.4 categoryCode: "playback"
 
 
   function getOctave (note) {
@@ -150,7 +150,7 @@ MuseScore {
      */
 
     // absolute hertz value
-    if (/^(\d+)\s*(?:hz)?$/.test(note)) return note.match(/^(\d+)\s*(?:hz)?$/)[1];
+    if (/^(\d+)(\.\d+)?$/.test(note)) return Number(note);
     
     const naturals = (params && params.naturals) || [1, 9/8, 81/64, 4/3, 3/2, 27/16, 243/128];
     const middleC = 440 * Math.pow(2, -9/12); // C4
@@ -466,7 +466,7 @@ MuseScore {
     // reference note
     note.tuning += reference;
 
-    log("Tuned a note to " + Math.round(note.tuning * 1000) / 1000);
+    // log("Tuned a note to " + Math.round(note.tuning * 1000) / 1000);
     
     return note.tuning;
   }
@@ -543,7 +543,8 @@ MuseScore {
 
       // check reference note change
       if (/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*([A-G](?:\d*[#bxtd\^v])*\d*)$/i.test(text)) map.referenceNote = [...text.match(/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*([A-G](?:\d*[#bxtd\^v])*\d*)$/i).slice(1), false];
-      if (/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*(\d+\s*(?:hz)?)$/i.test(text)) map.referenceNote = [...text.match(/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*(\d+\s*(?:hz)?)$/i).slice(1).reverse(), true];
+      if (/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*(\d+(?:\.\d+)?)\s*(?:hz)?$/i.test(text)) map.referenceNote = [...text.match(/^([A-G](?:\d*[#bxtd\^v])*\d*)\s*=\s*(\d+(?:\.\d+)?)\s*(?:hz)?$/i).slice(1).reverse(), true];
+
       // B = A tunes old B to new A
       // A = 442 tunes new A to 442hz
       // .referenceNote[2] is true if the change is absolute
@@ -576,7 +577,7 @@ MuseScore {
     logs.write("");
   }
 
-  function log (msg) {
+  function log (msg, source = "MAIN") {
     /**
      * Writes to the log and console
      *
@@ -584,7 +585,7 @@ MuseScore {
      */
     //return;
     if (typeof msg === "object") msg = msg.join(" ");
-    msg = "[MAIN] " + msg;
+    msg = "[" + source + "] " + msg;
     console.log(msg);
     logs.write((logs.read() + msg).trim().replace(/\n+/g, "\n"));
   }
@@ -608,24 +609,23 @@ MuseScore {
         const part = curScore.parts[parts[i]];
         if (part.hasDrumStaff) drums.push(Math.floor(part.startTrack / 4)); // assume all drumsets only have 1 staff!
       }
-      // log("DRUMS:");
-      // log(JSON.stringify(drums));
+      // log("DRUMS: " + JSON.stringify(drums));
 
       curScore.startCmd();
 
       // loop through each track
       for (var track = 0; track < curScore.nstaves * 4; track++) {
         // is a drum? too bad
-        var isDrum = drums.some(function (e) {
+        const isDrum = drums.some(function (e) {
           return e === Math.floor(track / 4);
         });
         if (isDrum && track > 0) continue;
 
-        log("----- Track " + track + " -----");
+        // log("----- Track " + track + " -----");
 
         var measure = curScore.firstMeasure;
         while (measure) {
-          log("--m");
+          // log("--m");
 
           var segment = measure.firstSegment;
           var accidentalMap = {}
@@ -652,7 +652,7 @@ MuseScore {
             if (annotations.temperament !== undefined && track === 0) {
               if (annotations.temperament === "JI") paramsMap.push([tick, false]);
               else paramsMap.push([tick, calcParams(Number(annotations.temperament))]);
-              log("Changed temperament to " + annotations.temperament);
+              // log("Changed temperament to " + annotations.temperament);
               // log(JSON.stringify(paramsMap));
             }
             if (getFromMap(tick, paramsMap) !== null) params = getFromMap(tick, paramsMap);
@@ -661,7 +661,7 @@ MuseScore {
             if (annotations.relativity !== undefined && track === 0) {
               if (tick === 0) relativityMap.pop();
               relativityMap.push([tick, annotations.relativity]);
-              log("Changed default relativity to " + annotations.relativity);
+              // log("Changed default relativity to " + annotations.relativity);
             }
             if (getFromMap(tick, relativityMap) !== null) relativity = getFromMap(tick, relativityMap);
             
@@ -675,14 +675,14 @@ MuseScore {
                   const r = newKey[i][1] === -1 ? relativity : newKey[i][1];
                   return (r ? v : 1) * newKey[i][0];
                 })]);
-                log(JSON.stringify(keysigMap));
+                // log(JSON.stringify(keysigMap));
               }
             }
 
             // check for a reference note retune part 2
             if (annotations.referenceNote !== undefined && track === 0) {
               annotations.referenceNote[1] = parseNote(annotations.referenceNote[1], params);
-              log([annotations.referenceNote[0], "/", annotations.referenceNote[1]]);
+              // log([annotations.referenceNote[0], "/", annotations.referenceNote[1]]);
               reference = (annotations.referenceNote[2] ? 0 : reference) + Math.log(annotations.referenceNote[0] / annotations.referenceNote[1]) / Math.log(2) * 1200;
               referenceMap.push([tick, reference]);
             }
@@ -705,7 +705,7 @@ MuseScore {
       qtQuit();
 
     } catch (e) { 
-      log("ERROR: " + e);
+      log(e + "\n  " + e.stack.replace(/\n/g, "\n  "), "ERROR");
       qtQuit();
     }
   }
