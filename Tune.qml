@@ -351,8 +351,8 @@ MuseScore {
 
       SAGITTAL_5V7KD: 5103/5120,
       SAGITTAL_5V7KU: 5120/5103,
-      SAGITTAL_5CD: 80/81,
-      SAGITTAL_5CU: 81/80,
+      SAGITTAL_5CD: Math.pow(_5C, -1), // temporary fix
+      SAGITTAL_5CU:          _5C,
       SAGITTAL_7CD: 63/64,
       SAGITTAL_7CU: 64/63,
       SAGITTAL_25SDD: 6400/6561,
@@ -652,8 +652,8 @@ MuseScore {
             if (annotations.temperament !== undefined && track === 0) {
               if (annotations.temperament === "JI") paramsMap.push([tick, false]);
               else paramsMap.push([tick, calcParams(Number(annotations.temperament))]);
-              // log("Changed temperament to " + annotations.temperament);
-              // log(JSON.stringify(paramsMap));
+              log("Changed temperament to " + annotations.temperament);
+              log(JSON.stringify(paramsMap));
             }
             if (getFromMap(tick, paramsMap) !== null) params = getFromMap(tick, paramsMap);
 
@@ -661,7 +661,7 @@ MuseScore {
             if (annotations.relativity !== undefined && track === 0) {
               if (tick === 0) relativityMap.pop();
               relativityMap.push([tick, annotations.relativity]);
-              // log("Changed default relativity to " + annotations.relativity);
+              log("Changed default relativity to " + annotations.relativity);
             }
             if (getFromMap(tick, relativityMap) !== null) relativity = getFromMap(tick, relativityMap);
             
@@ -675,14 +675,14 @@ MuseScore {
                   const r = newKey[i][1] === -1 ? relativity : newKey[i][1];
                   return (r ? v : 1) * newKey[i][0];
                 })]);
-                // log(JSON.stringify(keysigMap));
+                log(JSON.stringify(keysigMap));
               }
             }
 
             // check for a reference note retune part 2
             if (annotations.referenceNote !== undefined && track === 0) {
               annotations.referenceNote[1] = parseNote(annotations.referenceNote[1], params);
-              // log([annotations.referenceNote[0], "/", annotations.referenceNote[1]]);
+              log([annotations.referenceNote[0], "/", annotations.referenceNote[1]]);
               reference = (annotations.referenceNote[2] ? 0 : reference) + Math.log(annotations.referenceNote[0] / annotations.referenceNote[1]) / Math.log(2) * 1200;
               referenceMap.push([tick, reference]);
             }
